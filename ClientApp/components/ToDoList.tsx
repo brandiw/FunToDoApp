@@ -135,8 +135,8 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
                     </form>
 
                     {/* Buttons to add to or clear the list */}
-                    <button onClick={ () => { this.addItem() } }>Submit Item</button>
-                    <button onClick={ () => { this.clear() } }>Clear</button>
+                    <button onClick={ () => { this.addItem() } } className="btn btn-primary">Add Item</button>
+                    <button onClick={ () => { this.clear() } } className="btn btn-danger">Clear</button>
                 </div>
             </div>
             <hr />
