@@ -11,8 +11,60 @@ namespace roadtrip.Controllers
     [Route("api/[controller]")]
     public class FakeDBController : Controller
     {
+        [HttpGet("[action]")]
+        public IEnumerable<Item> Items()
+        {
+            return ItemsList;
+        }
 
-        // Item class
+        [HttpPost("[action]")]
+        public IEnumerable<Item> Add([FromBody] ItemRepresentation postData)
+        {
+            if(postData.parent > -1){
+                // childnode
+                Item parent = Item.findById(ItemsList, postData.parent);
+                Item newItem = new Item(counter++, parent, postData.description, postData.dueDate, false, postData.detail);
+                return ItemsList;
+            }
+            else {
+                //only top-level
+                Item newItem = new Item(counter++, postData.description, postData.dueDate, false, postData.detail);
+                ItemsList.Add(newItem);
+                return ItemsList;
+            }
+        }
+
+        [HttpPost("[action]")]
+        public IEnumerable<Item> MarkDone([FromBody] ItemRepresentation item)
+        {
+            // Find by id in ItemsList
+            Item current = Item.findById(ItemsList, item.id);
+
+            // If an item was found, mark it and all its children as done
+            if(current != null){
+                current.markDone();
+            }
+
+            return ItemsList;
+        }
+
+        [HttpPost("[action]")]
+        public IEnumerable<Item> Delete([FromBody] ItemRepresentation item)
+        {
+            Item.removeItem(ItemsList, item.id);
+            return ItemsList;
+        }
+
+        [HttpGet("[action]")]
+        public IEnumerable<Item> DeleteAll()
+        {
+            ItemsList.Clear();
+            return ItemsList;
+        }
+
+        // Everything below is just to simulate a database table of items
+        // and give us some mock data to look at. Normally we'd use a database and
+        // some ORM to do this bit if it weren't just a prototype.
         [Serializable()]
         public class Item {
             public int id;
@@ -46,6 +98,14 @@ namespace roadtrip.Controllers
 
             public void markDone(){
                 this.isDone = true;
+                markChildrenDone();
+
+                if(this.parent > -1){
+                    checkParentIsDone();
+                }
+            }
+
+            public void markChildrenDone(){
                 for(var i = 0; i < this.children.Count; i++){
                     this.children[i].isDone = true;
                     for(var j = 0; j < this.children[i].children.Count; j++){
@@ -54,8 +114,20 @@ namespace roadtrip.Controllers
                 }
             }
 
-            public void addChild(Item newItem){
-                this.children.Add(newItem);
+            public void checkParentIsDone(){
+                Item parentNode = Item.findById(ItemsList, this.parent);
+
+                if(parentNode != null){
+                    for(var i = 0; i < parentNode.children.Count; i++){
+                        if(!parentNode.children[i].isDone){
+                            return;
+                        }
+                    }
+
+                    // All other subtasks are done, let's mark
+                    // the parent node done as well
+                    parentNode.markDone();
+                }
             }
 
             public static void removeItem(List<Item> list, int id){
@@ -121,59 +193,5 @@ namespace roadtrip.Controllers
         {
             item1, item2, item3
         };
-
-        [HttpGet("[action]")]
-        public IEnumerable<Item> Items()
-        {
-            return ItemsList;
-        }
-
-        [HttpPost("[action]")]
-        public IEnumerable<Item> Add([FromBody] ItemRepresentation postData)
-        {
-            if(postData.parent > -1){
-                // childnode
-                Item parent = Item.findById(ItemsList, postData.parent);
-                Item newItem = new Item(counter++, parent, postData.description, postData.dueDate, false, postData.detail);
-                parent.addChild(newItem);
-                return ItemsList;
-            }
-            else {
-                //only top-level
-                Item newItem = new Item(counter++, postData.description, postData.dueDate, false, postData.detail);
-                ItemsList.Add(newItem);
-                return ItemsList;
-            }
-        }
-
-        [HttpPost("[action]")]
-        public IEnumerable<Item> MarkDone([FromBody] ItemRepresentation item)
-        {
-            // Find by id in ItemsList
-            Item current = Item.findById(ItemsList, item.id);
-
-            // If an item was found, mark it and all its children as done
-            if(current != null){
-                current.markDone();
-            }
-
-            return ItemsList;
-        }
-
-        [HttpPost("[action]")]
-        public IEnumerable<Item> Delete([FromBody] ItemRepresentation item)
-        {
-            Item.removeItem(ItemsList, item.id);
-
-            return ItemsList;
-        }
-
-        [HttpGet("[action]")]
-        public IEnumerable<Item> DeleteAll()
-        {
-            ItemsList.Clear();
-
-            return ItemsList;
-        }
     }
 }

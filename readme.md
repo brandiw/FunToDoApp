@@ -44,10 +44,9 @@
 * Implemented delete button
 * Clear + Delete functionality moved to API
 
-### Tomorrow
+### Day 3 Part 2 (1 hour)
 
-My plan: 
-* Fix duplicate bug
+* Fixed duplicate bug
 * Comment and document
-* If time implement the vacation math problem too
+* Sub-tasks now close parents if all sub-tasks done
 

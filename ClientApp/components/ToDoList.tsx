@@ -2,25 +2,6 @@ import * as React from 'react';
 import { RouteComponentProps } from 'react-router';
 import 'isomorphic-fetch';
 
-class Item {
-    id: number;
-    description: string;
-    parent: number;
-    children: Item[];
-    isDone: boolean;
-    dueDate: Date;
-    detail: string;
-}
-
-interface ToDoState {
-    items: Item[];
-    message: string;
-    newItem: string;
-    newDetail: string;
-    newDueDate: string;
-    loading: boolean;
-}
-
 export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState> {
     constructor() {
         super();
@@ -33,10 +14,10 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
             loading: true
         };
 
+        // Get data from API
         fetch('api/FakeDB/Items')
             .then(response => response.json() as Promise<Item[]>)
             .then(data => {
-                console.log('data from api', data);
                 this.setState({ items: data, loading: false });
             });
     }
@@ -94,8 +75,6 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
     }
 
     addSubItem = (parent: number, newItem: string, newDueDate: string, newDetail: string) => {
-        console.log('here', parent, newItem, newDueDate, newDetail);
-
         // Correct timezone issue
         let due = new Date(newDueDate);
         due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
@@ -121,9 +100,7 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
         }).then(response => {
             return response.json();
         }).then(data => {
-            this.setState({
-                items: data
-            });
+            this.setState({ items: data });
         });
     }
 
@@ -137,27 +114,16 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
         }).then(response => {
             return response.json();
         }).then(data => {
-            console.log('datta', data);
-            this.setState({
-                items: data
-            });
+            this.setState({ items: data });
         });
     }
 
-    dueDateChange = (e: any) => {
-        this.setState({ newDueDate: e.target.value, message: '' });
-    }
-
-    newItemChange = (e: any) => {
-        this.setState({ newItem: e.target.value, message: '' });
-    }
-
-    detailChange = (e: any) => {
-        this.setState({ newDetail: e.target.value, message: '' });
-    }
+    // Data/form state handlers
+    dueDateChange = (e: any) => { this.setState({ newDueDate: e.target.value, message: '' }); }
+    newItemChange = (e: any) => { this.setState({ newItem: e.target.value, message: '' }); }
+    detailChange = (e: any) => { this.setState({ newDetail: e.target.value, message: '' }); }
 
     public render() {
-        console.log(this.state.items);
         {/* Build existing list of to-do items */}
         const itemsList = this.state.items.map(item => {
             item.dueDate = new Date(item.dueDate);
@@ -173,7 +139,7 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
                     <h2>What do you need to do today?</h2>
 
                     <p className="text-danger">{ this.state.message }</p>
-                    {/* Form to add new item */}
+                    {/* Form to add new top-level item */}
                     <form onSubmit={ (e) => { this.addItem(e) } }>
                         <div className="form-group">
                             <label>Task Description</label>
@@ -198,29 +164,13 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
             <hr />
             <div className="row">
                 <div className="col-xs-10 col-xs-offset-1">
+                    {/* Display my items list */}
                     <h2>My List</h2>
                     { itemsList }
                 </div>
             </div>
         </div>;
     }
-}
-
-interface ListItemProps {
-    item: Item;
-    markDone: Function;
-    deleteItem: Function;
-    addSubItem: Function;
-    indent: number;
-}
-
-interface ListItemState {
-    showChildren: boolean;
-    showForm: boolean;
-    message: string;
-    newItem: string;
-    newDetail: string;
-    newDueDate: string;
 }
 
 class ToDoListItem extends React.Component<ListItemProps, ListItemState> {
@@ -236,44 +186,37 @@ class ToDoListItem extends React.Component<ListItemProps, ListItemState> {
         };
     }
 
+    // Helper method checking dates
     addDays = (date: Date, numberOfDays: number) => {
         date.setDate(date.getDate() + numberOfDays);
         return date;
     }
 
+    // Create item and wipe/clear form
     addSubItem = (e: any) => {
         e.preventDefault();
         this.props.addSubItem(this.props.item.id, this.state.newItem, this.state.newDueDate, this.state.newDetail);
-        this.setState({ showForm: false, showChildren: true });
+        this.setState({ showForm: false,
+            showChildren: true,
+            newItem: '',
+            message: '',
+            newDetail: '',
+            newDueDate: new Date().toISOString().substring(0, 10)
+        });
     }
 
-    markDone = () => {
-        this.props.markDone(this.props.item);
-    }
+    // Functions that call parent
+    markDone = () => { this.props.markDone(this.props.item); }
+    deleteItem = () => { this.props.deleteItem(this.props.item); }
 
-    toggleChildren = () => {
-        this.setState({ showChildren: !this.state.showChildren });
-    }
+    // Display Toggles
+    toggleChildren = () => { this.setState({ showChildren: !this.state.showChildren }); }
+    toggleForm = () => { this.setState({ showForm: !this.state.showForm }); }
 
-    toggleForm = () => {
-        this.setState({ showForm: !this.state.showForm });
-    }
-
-    dueDateChange = (e: any) => {
-        this.setState({ newDueDate: e.target.value, message: '' });
-    }
-
-    newItemChange = (e: any) => {
-        this.setState({ newItem: e.target.value, message: '' });
-    }
-
-    detailChange = (e: any) => {
-        this.setState({ newDetail: e.target.value, message: '' });
-    }
-
-    deleteItem = () => {
-        this.props.deleteItem(this.props.item);
-    }
+    // Data state handlers
+    dueDateChange = (e: any) => { this.setState({ newDueDate: e.target.value, message: '' }); }
+    newItemChange = (e: any) => { this.setState({ newItem: e.target.value, message: '' }); }
+    detailChange = (e: any) => { this.setState({ newDetail: e.target.value, message: '' }); }
 
     public render(){
         {/* If it is marked done, add a strikethrough */}
@@ -378,4 +321,41 @@ class ToDoListItem extends React.Component<ListItemProps, ListItemState> {
             </div>
         </div>;
     }
+}
+
+/* Class, state, and Proptype definitions */
+class Item {
+    id: number;
+    description: string;
+    parent: number;
+    children: Item[];
+    isDone: boolean;
+    dueDate: Date;
+    detail: string;
+}
+
+interface ToDoState {
+    items: Item[];
+    message: string;
+    newItem: string;
+    newDetail: string;
+    newDueDate: string;
+    loading: boolean;
+}
+
+interface ListItemProps {
+    item: Item;
+    markDone: Function;
+    deleteItem: Function;
+    addSubItem: Function;
+    indent: number;
+}
+
+interface ListItemState {
+    showChildren: boolean;
+    showForm: boolean;
+    message: string;
+    newItem: string;
+    newDetail: string;
+    newDueDate: string;
 }
