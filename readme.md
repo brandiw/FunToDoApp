@@ -50,3 +50,18 @@
 * Comment and document
 * Sub-tasks now close parents if all sub-tasks done
 
+## Finished Product
+
+### Entry Form
+
+![Entry form](http://res.cloudinary.com/briezh/image/upload/v1521153889/Screen_Shot_2018-03-15_at_3.27.28_PM_lsjnea.png)
+
+### List and Sublist Displays
+
+![Minimized List](http://res.cloudinary.com/briezh/image/upload/v1521153889/Screen_Shot_2018-03-15_at_3.31.03_PM_faqndi.png)
+
+![Sublist](http://res.cloudinary.com/briezh/image/upload/v1521153889/Screen_Shot_2018-03-15_at_3.30.23_PM_qcuwfu.png)
+
+## Overview
+
+I didn't get to the part where I store the data anywhere. It'd be pretty easy to add, I just ran out of time, and the directions made that part look less important so I focused my efforts elsewhere. All other requirements seem to be met.
