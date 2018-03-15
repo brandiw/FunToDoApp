@@ -44,4 +44,5 @@ My plan:
 * Clear + Delete functionality move to API
 * Mark done functionality should move to API
 * If time implement the vacation math problem too
+* Add details field to Item class
 
