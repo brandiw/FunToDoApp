@@ -12,7 +12,7 @@ export class Vacation extends React.Component<RouteComponentProps<{}>, VacationS
         super();
         this.state = { forecasts: [], loading: true };
 
-        fetch('api/SampleData/WeatherForecasts')
+        fetch('api/FakeDB/Items')
             .then(response => response.json() as Promise<WeatherForecast[]>)
             .then(data => {
                 this.setState({ forecasts: data, loading: false });

@@ -1,25 +1,14 @@
 import * as React from 'react';
 import { RouteComponentProps } from 'react-router';
-
-let counter = 1;
+import 'isomorphic-fetch';
 
 class Item {
     id: number;
     description: string;
-    parent: Item;
+    parent: number;
     children: Item[];
     isDone: boolean;
     dueDate: Date;
-
-    constructor(desc: string, due: Date){
-        this.id = counter;
-        counter += 1;
-        this.description = desc;
-        this.dueDate = due;
-        this.parent = this;
-        this.children = [];
-        this.isDone = false;
-    }
 }
 
 interface ToDoState {
@@ -27,6 +16,7 @@ interface ToDoState {
     message: string;
     newItem: string;
     newDueDate: string;
+    loading: boolean;
 }
 
 export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState> {
@@ -36,15 +26,24 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
             items: [],
             message: '',
             newItem: '',
-            newDueDate: ''
+            newDueDate: new Date().toISOString().substring(0, 10),
+            loading: true
         };
+
+        fetch('api/FakeDB/Items')
+            .then(response => response.json() as Promise<Item[]>)
+            .then(data => {
+                console.log('data', data);
+                this.setState({ items: data, loading: false });
+            });
     }
 
     clear = () => {
         this.setState({ items: [] });
     }
 
-    addItem = () => {
+    addItem = (e: any) => {
+        e.preventDefault();
         if(this.state.newItem == '' || this.state.newDueDate == ''){
             this.setState({
                 message: 'Please enter a description and a due date'
@@ -55,20 +54,35 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
             let due = new Date(this.state.newDueDate);
             due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
 
-            let newItemObj = new Item(this.state.newItem, due);
-            let items = this.state.items;
-            items.push(newItemObj);
+            // Set up item object to send to our API
+            let options = {
+                dueDate: due,
+                description: this.state.newItem,
+                parent: -1
+            }
 
-            this.setState({
-                items: items,
-                newItem: '',
-                message: ''
+            fetch('api/FakeDB/Add', {
+                method: 'post',
+                body: JSON.stringify(options),
+                headers: {
+                  'content-type': 'application/json'
+                }
+            }).then(response => {
+                return response.json();
+            }).then(data => {
+                let items = this.state.items;
+                items.push(data);
+
+                this.setState({
+                    items: items,
+                    newItem: '',
+                    message: ''
+                });
             });
         }
     }
 
     markDone = (item: Item) => {
-        console.log('mark done top');
         let updatedItems = this.state.items;
 
         for(var i = 0; i < updatedItems.length; i++){
@@ -85,16 +99,11 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
         this.setState({ items: updatedItems });
     }
 
-    addSubTask = () => {
-        console.log('TO DO');
-    }
-
-    checkAllChildrenDone = () => {
-        console.log('checking children')
+    areAllChildrenDone = (item: Item) => {
+        console.log('checking if children all done');
     }
 
     dueDateChange = (e: any) => {
-        console.log(e.target.value);
         this.setState({ newDueDate: e.target.value, message: '' });
     }
 
@@ -102,20 +111,16 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
         this.setState({ newItem: e.target.value, message: '' });
     }
 
-    subTaskChange = (e: any) => {
-        console.log('add to sub task array');
-        console.log('display that subtask in preview');
-        console.log('wipe sub-task field');
-    }
-
     public render() {
-        console.log('rendering', this.state)
         {/* Build existing list of to-do items */}
         const itemsList = this.state.items.map(item => {
+            item.dueDate = new Date(item.dueDate);
             return <ToDoListItem key={item.description} item={item} markDone={this.markDone} />;
         });
+        const loadText = <h2>Loading...</h2>
 
         return <div>
+            {this.state.loading ? loadText : ""}
             <div className="row">
                 <div className="col-xs-10 col-xs-offset-1">
                     <h1>To-Do List</h1>
@@ -123,19 +128,20 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
 
                     <p className="text-danger">{ this.state.message }</p>
                     {/* Form to add new item */}
-                    <form onSubmit={this.addItem}>
+                    <form onSubmit={ (e) => { this.addItem(e) } }>
                         <div className="form-group">
                             <label>Task Description</label>
                             <input type="text" className="form-control" placeholder="What are you doing?" onChange={this.newItemChange} value={this.state.newItem}  />
                         </div>
                         <div className="form-group">
                             <label>Due Date:</label>
-                            <input type="date" className="form-control" defaultValue={new Date().toDateString()} onChange={this.dueDateChange} value={this.state.newDueDate} />
+                            <input type="date" className="form-control" onChange={this.dueDateChange} value={this.state.newDueDate} />
                         </div>
+                        <input type="submit" className="hidden" />
                     </form>
 
                     {/* Buttons to add to or clear the list */}
-                    <button onClick={ () => { this.addItem() } } className="btn btn-primary">Add Item</button>
+                    <button onClick={ (e) => { this.addItem(e) } } className="btn btn-primary">Add Item</button>
                     <button onClick={ () => { this.clear() } } className="btn btn-danger">Clear</button>
                 </div>
             </div>
@@ -181,7 +187,7 @@ class ToDoListItem extends React.Component<ListItemProps> {
         let now = new Date();
         now.setHours(0, 0, 0, 0);
         let note = '';
-        console.log(now, 'comparing to', this.props.item.dueDate)
+
         if(this.props.item.dueDate < now){
             classes += ' alert-info';
             note = '(Past Due)'
