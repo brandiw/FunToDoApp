@@ -9,12 +9,14 @@ class Item {
     children: Item[];
     isDone: boolean;
     dueDate: Date;
+    detail: string;
 }
 
 interface ToDoState {
     items: Item[];
     message: string;
     newItem: string;
+    newDetail: string;
     newDueDate: string;
     loading: boolean;
 }
@@ -27,19 +29,44 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
             message: '',
             newItem: '',
             newDueDate: new Date().toISOString().substring(0, 10),
+            newDetail: '',
             loading: true
         };
 
         fetch('api/FakeDB/Items')
             .then(response => response.json() as Promise<Item[]>)
             .then(data => {
-                console.log('data', data);
+                console.log('data from api', data);
                 this.setState({ items: data, loading: false });
             });
     }
 
     clear = () => {
-        this.setState({ items: [] });
+        fetch('api/FakeDB/DeleteAll')
+            .then(response => response.json() as Promise<Item[]>)
+            .then(data => {
+                this.setState({ items: [], loading: false });
+            });
+    }
+
+    add = (options: any) => {
+        fetch('api/FakeDB/Add', {
+            method: 'post',
+            body: JSON.stringify(options),
+            headers: {
+              'content-type': 'application/json'
+            }
+        }).then(response => {
+            return response.json();
+        }).then(data => {
+            this.setState({
+                items: data,
+                newItem: '',
+                message: '',
+                newDetail: '',
+                newDueDate: new Date().toISOString().substring(0, 10)
+            });
+        });
     }
 
     addItem = (e: any) => {
@@ -50,7 +77,7 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
             });
         }
         else {
-            // Correct timezone bug
+            // Correct timezone issue
             let due = new Date(this.state.newDueDate);
             due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
 
@@ -58,49 +85,63 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
             let options = {
                 dueDate: due,
                 description: this.state.newItem,
-                parent: -1
+                parent: -1,
+                detail: this.state.newDetail
             }
 
-            fetch('api/FakeDB/Add', {
-                method: 'post',
-                body: JSON.stringify(options),
-                headers: {
-                  'content-type': 'application/json'
-                }
-            }).then(response => {
-                return response.json();
-            }).then(data => {
-                let items = this.state.items;
-                items.push(data);
-
-                this.setState({
-                    items: items,
-                    newItem: '',
-                    message: ''
-                });
-            });
+            this.add(options);
         }
+    }
+
+    addSubItem = (parent: number, newItem: string, newDueDate: string, newDetail: string) => {
+        console.log('here', parent, newItem, newDueDate, newDetail);
+
+        // Correct timezone issue
+        let due = new Date(newDueDate);
+        due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
+
+        // Set up item object to send to our API
+        let options = {
+            dueDate: due,
+            description: newItem,
+            parent: parent,
+            detail: newDetail
+        }
+
+        this.add(options);
     }
 
     markDone = (item: Item) => {
-        let updatedItems = this.state.items;
-
-        for(var i = 0; i < updatedItems.length; i++){
-            if(updatedItems[i].id == item.id){
-                updatedItems[i].isDone = true;
-                for(var j = 0; j < updatedItems[i].children.length; j++){
-                    updatedItems[i].children[j].isDone = true;
-                    for(var k = 0; k < updatedItems[i].children[j].children.length; k++){
-                        updatedItems[i].children[j].children[k].isDone = true;
-                    }
-                }
+        fetch('api/FakeDB/MarkDone', {
+            method: 'post',
+            body: JSON.stringify({id: item.id}),
+            headers: {
+              'content-type': 'application/json'
             }
-        }
-        this.setState({ items: updatedItems });
+        }).then(response => {
+            return response.json();
+        }).then(data => {
+            this.setState({
+                items: data
+            });
+        });
     }
 
-    areAllChildrenDone = (item: Item) => {
-        console.log('checking if children all done');
+    deleteItem = (item: Item) => {
+        fetch('api/FakeDB/Delete', {
+            method: 'post',
+            body: JSON.stringify({id: item.id}),
+            headers: {
+              'content-type': 'application/json'
+            }
+        }).then(response => {
+            return response.json();
+        }).then(data => {
+            console.log('datta', data);
+            this.setState({
+                items: data
+            });
+        });
     }
 
     dueDateChange = (e: any) => {
@@ -111,11 +152,16 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
         this.setState({ newItem: e.target.value, message: '' });
     }
 
+    detailChange = (e: any) => {
+        this.setState({ newDetail: e.target.value, message: '' });
+    }
+
     public render() {
+        console.log(this.state.items);
         {/* Build existing list of to-do items */}
         const itemsList = this.state.items.map(item => {
             item.dueDate = new Date(item.dueDate);
-            return <ToDoListItem key={item.description} item={item} markDone={this.markDone} />;
+            return <ToDoListItem key={item.id} item={item} markDone={this.markDone} deleteItem={this.deleteItem} addSubItem={this.addSubItem} indent={0} />;
         });
         const loadText = <h2>Loading...</h2>
 
@@ -136,6 +182,10 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
                         <div className="form-group">
                             <label>Due Date:</label>
                             <input type="date" className="form-control" onChange={this.dueDateChange} value={this.state.newDueDate} />
+                        </div>
+                        <div className="form-group">
+                            <label>Details (Optional):</label>
+                            <textarea className="form-control" onChange={this.detailChange} value={this.state.newDetail} />
                         </div>
                         <input type="submit" className="hidden" />
                     </form>
@@ -159,24 +209,70 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
 interface ListItemProps {
     item: Item;
     markDone: Function;
+    deleteItem: Function;
+    addSubItem: Function;
+    indent: number;
 }
 
-class ToDoListItem extends React.Component<ListItemProps> {
+interface ListItemState {
+    showChildren: boolean;
+    showForm: boolean;
+    message: string;
+    newItem: string;
+    newDetail: string;
+    newDueDate: string;
+}
+
+class ToDoListItem extends React.Component<ListItemProps, ListItemState> {
+    constructor() {
+        super();
+        this.state = {
+            showChildren: false,
+            showForm: false,
+            message: '',
+            newItem: '',
+            newDueDate: new Date().toISOString().substring(0, 10),
+            newDetail: ''
+        };
+    }
+
     addDays = (date: Date, numberOfDays: number) => {
         date.setDate(date.getDate() + numberOfDays);
         return date;
     }
 
-    addSubItem = () => {
-        console.log('show form');
+    addSubItem = (e: any) => {
+        e.preventDefault();
+        this.props.addSubItem(this.props.item.id, this.state.newItem, this.state.newDueDate, this.state.newDetail);
+        this.setState({ showForm: false, showChildren: true });
     }
 
     markDone = () => {
         this.props.markDone(this.props.item);
     }
 
+    toggleChildren = () => {
+        this.setState({ showChildren: !this.state.showChildren });
+    }
+
+    toggleForm = () => {
+        this.setState({ showForm: !this.state.showForm });
+    }
+
+    dueDateChange = (e: any) => {
+        this.setState({ newDueDate: e.target.value, message: '' });
+    }
+
+    newItemChange = (e: any) => {
+        this.setState({ newItem: e.target.value, message: '' });
+    }
+
+    detailChange = (e: any) => {
+        this.setState({ newDetail: e.target.value, message: '' });
+    }
+
     deleteItem = () => {
-        console.log('del item');
+        this.props.deleteItem(this.props.item);
     }
 
     public render(){
@@ -200,6 +296,27 @@ class ToDoListItem extends React.Component<ListItemProps> {
             classes += ' alert-success';
         }
 
+        let displayExpansion = <span />
+        if(this.state.showChildren){
+            displayExpansion = <span>
+                            Less
+                            <span className="glyphicon glyphicon-arrow-up text-success" aria-hidden="true"></span>
+                        </span>
+        }
+        else {
+            displayExpansion = <span>
+                            More
+                            <span className="glyphicon glyphicon-arrow-down text-success" aria-hidden="true"></span>
+                        </span>
+        }
+
+        let indent = this.props.indent + 1;
+
+        const children: any = this.props.item.children.map(child => {
+            child.dueDate = new Date(child.dueDate);
+            return <ToDoListItem item={child} key={child.id} markDone={this.props.markDone} deleteItem={this.props.deleteItem} addSubItem={this.props.addSubItem} indent={indent} />
+        });
+
         return <div className={classes}>
             <div className="row">
                 <div className="col-xs-8">
@@ -210,8 +327,8 @@ class ToDoListItem extends React.Component<ListItemProps> {
                 </div>
                 <div className="col-xs-4 text-right">
                     <span className={this.props.item.isDone ? 'hidden' : ''}>
-                        <span onClick={this.addSubItem}>
-                            <span className="glyphicon glyphicon-plus text-primary" aria-hidden="true"></span>
+                        <span onClick={this.toggleForm} className={this.props.indent < 2 ? "" : "hidden"}>
+                            <span className={this.state.showForm ? "glyphicon glyphicon-minus text-primary" : "glyphicon glyphicon-plus text-primary"} aria-hidden="true"></span>
                         </span>
                         <span onClick={this.markDone}>
                             <span className="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
@@ -220,6 +337,43 @@ class ToDoListItem extends React.Component<ListItemProps> {
                     <span onClick={this.deleteItem}>
                         <span className="glyphicon glyphicon-remove text-danger" aria-hidden="true"></span>
                     </span>
+                </div>
+            </div>
+            <div className="row">
+                <div className="col-xs-8">
+                    <em className={this.props.item.isDone ? 'strike' : ''}>{this.props.item.detail}</em>
+                </div>
+                <div className="col-xs-4">
+                    <span className={this.props.item.children.length > 0 ? "" : "hidden"}>
+                        <span className="pull-right pointer" onClick={this.toggleChildren}>
+                            {displayExpansion}
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <div className={this.state.showForm ? "row top-space" : "row hidden"}>
+                <div className="col-xs-12">
+                    <h4>Add a Sub-Task</h4>
+                    <form onSubmit={this.addSubItem}>
+                        <div className="form-group">
+                            <label>Task Description</label>
+                            <input type="text" className="form-control" placeholder="What are you doing?" onChange={this.newItemChange} value={this.state.newItem}  />
+                        </div>
+                        <div className="form-group">
+                            <label>Due Date:</label>
+                            <input type="date" className="form-control" onChange={this.dueDateChange} value={this.state.newDueDate} />
+                        </div>
+                        <div className="form-group">
+                            <label>Details (Optional):</label>
+                            <textarea className="form-control" onChange={this.detailChange} value={this.state.newDetail} />
+                        </div>
+                        <input type="submit" className="btn btn-primary" />
+                    </form>
+                </div>
+            </div>
+            <div className="row">
+                <div className="col-xs-12 top-space">
+                    {this.state.showChildren ? children : ''}
                 </div>
             </div>
         </div>;

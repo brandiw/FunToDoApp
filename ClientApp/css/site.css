@@ -14,10 +14,23 @@ h2 {
   text-decoration: line-through;
 }
 
+.glyphicon-arrow-down,
+.glyphicon-arrow-up {
+  font-size: 12px !important;
+}
+
 .glyphicon {
   font-size: 18px;
   padding: 2px;
   cursor: pointer;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.top-space {
+  margin-top: 10px;
 }
 
 .main-nav li .glyphicon {

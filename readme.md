@@ -34,15 +34,20 @@
 * Put default date in as today for convenience
 * Add/submit function now runs when pressing enter in form
 
+### Day 3 Part 1 (3 hours)
+
+* Mark done functionality has been moved to API
+* Date is now reset to today on submit
+* Added optional details field to Item class
+* Wrote sub-task form / add button
+* Implemented sub-task functionality
+* Implemented delete button
+* Clear + Delete functionality moved to API
+
 ### Tomorrow
 
 My plan: 
-* Write sub-task form / add button
-* implement sub-task functionality
-* implement delete button
-* Reset date on submit
-* Clear + Delete functionality move to API
-* Mark done functionality should move to API
+* Fix duplicate bug
+* Comment and document
 * If time implement the vacation math problem too
-* Add details field to Item class
 
