@@ -65,3 +65,5 @@
 ## Overview
 
 I didn't get to the part where I store the data anywhere. It'd be pretty easy to add, I just ran out of time, and the directions made that part look less important so I focused my efforts elsewhere. All other requirements seem to be met.
+
+`NOTE`: The recruiter mentioned I should do unit tests, but the directions didn't explicitly say so. If that was supposed to have been listed on the requirements, then that is another thing I didn't have time for.
