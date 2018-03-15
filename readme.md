@@ -17,7 +17,7 @@
 * Timezone bug solved / Dates working and comparing correctly
 * Conditional displays added
     * Three states for due dates: 
-        * past (blue),
+        * past (blue)
         * due soon (yellow)
         * due later (green)
     * Buttons to mark done or add sub-items only appear when not done
@@ -40,7 +40,7 @@ My plan:
 * Write sub-task form / add button
 * implement sub-task functionality
 * implement delete button
-* Clear date on submit
+* Reset date on submit
 * Clear + Delete functionality move to API
 * Mark done functionality should move to API
 * If time implement the vacation math problem too
