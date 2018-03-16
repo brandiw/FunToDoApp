@@ -2,7 +2,7 @@ import * as React from 'react';
 import { RouteComponentProps } from 'react-router';
 import 'isomorphic-fetch';
 
-export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState> {
+export default class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState> {
     constructor() {
         super();
         this.state = {
@@ -157,7 +157,7 @@ export class ToDoList extends React.Component<RouteComponentProps<{}>, ToDoState
                     </form>
 
                     {/* Buttons to add to or clear the list */}
-                    <button onClick={ (e) => { this.addItem(e) } } className="btn btn-primary">Add Item</button>
+                    <button id="add" onClick={ (e) => { this.addItem(e) } } className="btn btn-primary">Add Item</button>
                     <button onClick={ () => { this.clear() } } className="btn btn-danger">Clear</button>
                 </div>
             </div>
